@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 import requests
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 
 """
 20180302 BvS: Made script compatible with Python3.5 (f function)
@@ -204,6 +204,9 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
+response_noauth = Response('Could not verify your access level for that URL.\n'
+                           'You have to login with proper credentials', 401,
+                           {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -227,6 +230,12 @@ def mine():
 
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
+    """Code for endpoint of creating new transaction to be added to chain"""
+    # Check authentication, limiting the parties that can make changes on the
+    # chain
+    if not _authorisation(request.authorization):
+        return response_noauth
+
     values = request.get_json()
 
     # Check that the required fields are in the POST'ed data
@@ -287,6 +296,38 @@ def consensus():
 
     return jsonify(response), 200
 
+
+@app.route('/authtest', methods=['GET'])
+def auth_test():
+    if not _authorisation(request.authorization):
+        return response_noauth
+    return "OK, you're in"
+
+#####
+# support steps
+#####
+
+
+def _authorisation(auth):
+    """Check username/password for basic authentication"""
+    if not auth:
+        return False
+    
+    user = auth.username
+    password = auth.password
+    
+    credentials = {'Alice': 'secret',
+                   'Bob': 'supersecret'}
+
+    try:
+        truepass = credentials[user]
+    except KeyError:
+        return False
+    
+    if truepass == password:
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
