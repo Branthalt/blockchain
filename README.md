@@ -1,7 +1,8 @@
+# Hackathon 20180302
+
 # To Do
 - Fix mine() getting proof from wrong block, last block instead current block
 - Remove mine reward transaction from mine(), since it is not a currency
-
 
 # Learn Blockchains by Building One
 
