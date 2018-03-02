@@ -1,3 +1,8 @@
+# To Do
+- Fix mine() getting proof from wrong block, last block instead current block
+- Remove mine reward transaction from mine(), since it is not a currency
+
+
 # Learn Blockchains by Building One
 
 [![Build Status](https://travis-ci.org/dvf/blockchain.svg?branch=master)](https://travis-ci.org/dvf/blockchain)
