@@ -1,0 +1,95 @@
+#### TEMPLATE ####
+
+{
+	"newbank": "",
+	"newiban": "",
+	"oldbank": "",
+	"oldiban": "",
+	"ubn": ""
+}
+
+#### LIFECYCLE: CREATE - TRANSFER - DELETE ####
+{
+	"newbank": "ING",
+	"newiban": "NL99INGB0102131415",
+	"oldbank": "NA",
+	"oldiban": "NA",
+	"ubn": "1111-00001234"
+}
+
+{
+	"newbank": "ABNAMRO",
+	"newiban": "NL99ABNA0202232425",
+	"oldbank": "ING",
+	"oldiban": "NL99INGB0102131415",
+	"ubn": "1111-00001234"
+}
+
+{
+	"newbank": "NA",
+	"newiban": "NA",
+	"oldbank": "ABNAMRO",
+	"oldiban": "NL99ABNA0202232425",
+	"ubn": "1111-00001234"
+}
+
+#### TRANSFER ####
+{
+	"newbank": "ABNAMRO",
+	"newiban": "NL99ABNA0202232425",
+	"oldbank": "RABOBANK",
+	"oldiban": "NL99RABO0102135555",
+	"ubn": "1112-00003243"
+}
+
+{
+	"newbank": "RABOBANK",
+	"newiban": "NL99RABO0202236666",
+	"oldbank": "ABNAMRO",
+	"oldiban": "NL99ABNA0102135467",
+	"ubn": "1113-00067854"
+}
+
+{
+	"newbank": "RABOBANK",
+	"newiban": "NL99RABO0202230987",
+	"oldbank": "ABNAMRO",
+	"oldiban": "NL99ABNA0102137565",
+	"ubn": "1113-00067654"
+}
+
+{
+	"newbank": "RABOBANK",
+	"newiban": "NL99RABO0202233456",
+	"oldbank": "ABNAMRO",
+	"oldiban": "NL99ABNA0102134856",
+	"ubn": "1113-00063454"
+}
+
+#### CREATE ####
+
+{
+	"newbank": "RABOBANK",
+	"newiban": "NL99RABO0202233457",
+	"oldbank": "NA",
+	"oldiban": "NA",
+	"ubn": "1112-00009897"
+}
+
+{
+	"newbank": "ING",
+	"newiban": "NL99INGB0208973456",
+	"oldbank": "NA",
+	"oldiban": "NA",
+	"ubn": "1111-00009897"
+}
+
+#### DELETE ####
+
+{
+	"newbank": "NA",
+	"newiban": "NA",
+	"oldbank": "ING",
+	"oldiban": "NL99INGB0208973456",
+	"ubn": "1111-00009897"
+}
