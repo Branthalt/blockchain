@@ -11,40 +11,6 @@ class Blockchain:
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
-        self.nodecredentials = ('Alice', 'secret')
-        # Create the genesis block
-        self.new_block()
-
-        # Check if server-config is there
-        # {"ip": "137.117.209.222", "network": ["40.91.211.115", "137.117.209.222"]}
-
-        # We should create a class Config, and pass it in the init
-
-        nodeconfig= "/home/baasuser/node-config.json" # HardCoded.
-        if os.path.isfile(nodeconfig):
-            with open(nodeconfig) as f:
-                config = json.load(f)
-                self.ownip = str(config['ip'])
-                for ip in config['network']:
-                    self.register_node('{}:5000'.format(ip))
-        else:
-            self.ownip = False
-
-    def register_node(self, address):
-        """
-        Add a new node to the list of nodes
-
-        :param address: Address of node. Eg. 'http://192.168.0.5:5000'
-        """
-
-        p = urlparse(address)
-        if not self.ownip in address:
-            if p.netloc:  # url is with http(s) prefix
-                self.nodes.add("{}://{}".format(p.scheme, p.netloc))
-            elif p.path:
-                self.nodes.add("http://{}".format(p.path))
-            else:
-                raise ValueError('Input URL is malformatted')
 
     def valid_chain(self, chain):
         """
@@ -133,6 +99,7 @@ class Blockchain:
         self.chain.append(block)
         self._broadcast_block(block)
         return block
+
     def _broadcast_block(self, block):
         """
         Broadcase a new block to all neighbours
