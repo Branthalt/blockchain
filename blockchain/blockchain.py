@@ -2,23 +2,33 @@ import hashlib
 import json
 from time import time
 from urllib.parse import urlparse
-from uuid import uuid4
+import os
 
 import requests
-from flask import Flask, jsonify, request, Response
-
-"""
-20180302 BvS: Made script compatible with Python3.5 (f function)
-"""
 
 class Blockchain:
     def __init__(self):
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
-
+        self.nodecredentials = ('Alice', 'secret')
         # Create the genesis block
-        self.new_block(previous_hash='1', proof=100)
+        self.new_block()
+
+        # Check if server-config is there
+        # {"ip": "137.117.209.222", "network": ["40.91.211.115", "137.117.209.222"]}
+
+        # We should create a class Config, and pass it in the init
+
+        nodeconfig= "/home/baasuser/node-config.json" # HardCoded.
+        if os.path.isfile(nodeconfig):
+            with open(nodeconfig) as f:
+                config = json.load(f)
+                self.ownip = str(config['ip'])
+                for ip in config['network']:
+                    self.register_node('{}:5000'.format(ip))
+        else:
+            self.ownip = False
 
     def register_node(self, address):
         """
@@ -27,15 +37,14 @@ class Blockchain:
         :param address: Address of node. Eg. 'http://192.168.0.5:5000'
         """
 
-        parsed_url = urlparse(address)
-        if parsed_url.netloc:
-            self.nodes.add(parsed_url.netloc)
-        elif parsed_url.path:
-            # Accepts an URL without scheme like '192.168.0.5:5000'.
-            self.nodes.add(parsed_url.path)
-        else:
-            raise ValueError('Invalid URL')
-
+        p = urlparse(address)
+        if not self.ownip in address:
+            if p.netloc:  # url is with http(s) prefix
+                self.nodes.add("{}://{}".format(p.scheme, p.netloc))
+            elif p.path:
+                self.nodes.add("http://{}".format(p.path))
+            else:
+                raise ValueError('Input URL is malformatted')
 
     def valid_chain(self, chain):
         """
@@ -73,16 +82,14 @@ class Blockchain:
 
         :return: True if our chain was replaced, False if not
         """
-
+        print(self.nodes)
         neighbours = self.nodes
         new_chain = None
-
         # We're only looking for chains longer than ours
         max_length = len(self.chain)
-
         # Grab and verify the chains from all the nodes in our network
         for node in neighbours:
-            response = requests.get('http://{node}/chain'.format(node=node))
+            response = requests.get('{node}/chain'.format(node=node))
 
             if response.status_code == 200:
                 length = response.json()['length']
@@ -100,15 +107,20 @@ class Blockchain:
 
         return False
 
-    def new_block(self, proof, previous_hash):
+    def new_block(self):
         """
         Create a new Block in the Blockchain
-
-        :param proof: The proof given by the Proof of Work algorithm
-        :param previous_hash: Hash of previous Block
         :return: New Block
         """
-
+        if len(self.chain) == 0:  # First block
+            proof = '100'
+            previous_hash = '1'
+            T = 1528620468.0015163 # Fixed time
+        else:
+            last_block = self.last_block
+            proof = self.proof_of_work(last_block)
+            previous_hash = self.hash(last_block)
+            T = time()
         block = {
             'index': len(self.chain) + 1,
             'timestamp': time(),
@@ -116,14 +128,42 @@ class Blockchain:
             'proof': proof,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
-
         # Reset the current list of transactions
         self.current_transactions = []
-
         self.chain.append(block)
+        self._broadcast_block(block)
         return block
+    def _broadcast_block(self, block):
+        """
+        Broadcase a new block to all neighbours
+        """
+        # Broadcast new bloclk post /chain
+        headers = {'Content-Type':'application/json'}
+        data = json.dumps(block)
+        for neighbour in self.nodes:
+            try:
+                r = requests.post("{}/chain".format(neighbour), headers = headers, data = data, auth=self.nodecredentials)
+            except:
+                pass
 
-    def new_transaction(self, oldbank, oldiban, newbank, newiban, ubn):
+    def add_remote_block(self, block):
+        """Add a block to the chain that has received from another server.
+        Params:
+            block: the block to add to the chain.
+
+        Return:
+            Boolean: True if the remote block has been added."""
+
+        # Validation of block
+        valid = _validate_new_block(block)
+
+        # Only add block if it is valid
+        if valid:
+            self.chain.append(block)
+        # Return validation result so API can handle accordingly
+        return valid
+
+    def new_transaction(self, oldbank, oldiban, newbank, newiban, alias):
         """
         Creates a new transaction to go into the next mined Block
 
@@ -137,7 +177,7 @@ class Blockchain:
             'oldiban': oldiban,
             'newbank': newbank,
             'newiban': newiban,
-            'ubn': ubn
+            'alias': alias
         })
 
         return self.last_block['index'] + 1
@@ -164,7 +204,7 @@ class Blockchain:
 
          - Find a number p' such that hash(pp') contains leading 4 zeroes
          - Where p is the previous proof, and p' is the new proof
-         
+
         :param last_block: <dict> last Block
         :return: <int>
         """
@@ -194,147 +234,24 @@ class Blockchain:
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
+    def _validate_new_block(self, block):
+        """Function to validate a new block to be added to the chain"""
 
-# Instantiate the Node
-app = Flask(__name__)
+        sample_block = {
+                        'index': 1,
+                        'timestamp': 1528564780.0628762,
+                        'transactions': [{"alias":"1234","newbank":"ING","newiban":"NL45INGB23456543","oldbank":"","oldiban":""}],
+                        'proof': proof,
+                        'previous_hash': "1998626d3776fde5234d768b1fd7957425a296b3eb9b6025e0a62c343064cafc",
+                        }
 
-# Generate a globally unique address for this node
-node_identifier = str(uuid4()).replace('-', '')
+        try:
+            assert type(block) == dict
+            assert block.keys() == sample_block.keys()
+            assert block['previous_hash'] == self.hash(last_block)
+        except:
+            # Reach this if checks haven't passed
+            return False
 
-# Instantiate the Blockchain
-blockchain = Blockchain()
-
-response_noauth = Response('Could not verify your access level for that URL.\n'
-                           'You have to login with proper credentials', 401,
-                           {'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-@app.route('/mine', methods=['GET'])
-def mine():
-    # We run the proof of work algorithm to get the next proof...
-    last_block = blockchain.last_block
-    proof = blockchain.proof_of_work(last_block)
-
-    # Forge the new Block by adding it to the chain
-    previous_hash = blockchain.hash(last_block)
-    block = blockchain.new_block(proof, previous_hash)
-
-    response = {
-        'message': "New Block Forged",
-        'index': block['index'],
-        'transactions': block['transactions'],
-        'proof': block['proof'],
-        'previous_hash': block['previous_hash'],
-    }
-    return jsonify(response), 200
-
-
-@app.route('/transactions/new', methods=['POST'])
-def new_transaction():
-    """Code for endpoint of creating new transaction to be added to chain"""
-    # Check authentication, limiting the parties that can make changes on the
-    # chain
-    if not _authorisation(request.authorization):
-        return response_noauth
-
-    values = request.get_json()
-
-    # Check that the required fields are in the POST'ed data
-    required = ['oldbank', 'oldiban', 'newbank', 'newiban', 'ubn']
-    if not all(k in values for k in required):
-        return 'Missing values', 400
-
-    # Create a new Transaction
-    index = blockchain.new_transaction(values['oldbank'], values['oldiban'],
-                                       values['newbank'], values['newiban'],
-                                       values['ubn'])
-
-    response = {'message': 'Transaction will be added to Block {index}'.format(index=index)}
-    return jsonify(response), 201
-
-
-@app.route('/chain', methods=['GET'])
-def full_chain():
-    response = {
-        'chain': blockchain.chain,
-        'length': len(blockchain.chain),
-    }
-    return jsonify(response), 200
-
-
-@app.route('/nodes/register', methods=['POST'])
-def register_nodes():
-    values = request.get_json()
-
-    nodes = values.get('nodes')
-    if nodes is None:
-        return "Error: Please supply a valid list of nodes", 400
-
-    for node in nodes:
-        blockchain.register_node(node)
-
-    response = {
-        'message': 'New nodes have been added',
-        'total_nodes': list(blockchain.nodes),
-    }
-    return jsonify(response), 201
-
-
-@app.route('/nodes/resolve', methods=['GET'])
-def consensus():
-    replaced = blockchain.resolve_conflicts()
-
-    if replaced:
-        response = {
-            'message': 'Our chain was replaced',
-            'new_chain': blockchain.chain
-        }
-    else:
-        response = {
-            'message': 'Our chain is authoritative',
-            'chain': blockchain.chain
-        }
-
-    return jsonify(response), 200
-
-
-@app.route('/authtest', methods=['GET'])
-def auth_test():
-    if not _authorisation(request.authorization):
-        return response_noauth
-    return "OK, you're in"
-
-#####
-# support steps
-#####
-
-
-def _authorisation(auth):
-    """Check username/password for basic authentication"""
-    if not auth:
-        return False
-    
-    user = auth.username
-    password = auth.password
-    
-    credentials = {'Alice': 'secret',
-                   'Bob': 'supersecret'}
-
-    try:
-        truepass = credentials[user]
-    except KeyError:
-        return False
-    
-    if truepass == password:
+        # Only here if all checks passed
         return True
-    else:
-        return False
-
-if __name__ == '__main__':
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
-    args = parser.parse_args()
-    port = args.port
-
-    app.run(host='0.0.0.0', port=port)

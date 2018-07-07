@@ -1,9 +1,6 @@
-# Hackathon 20180302
+# Blockchain in Python
+This project aims to create a useable blockchain in python along with the network components required.
 
-## To Do
-- Fix mine() getting proof from wrong block, last block instead current block
-- Get transaction signed by two parties and then added to the blockchain, providing proof that both parties agree wit the transaction
+##Requirements
+- Python 3.5 or higher
 
-## Libaries
-If you have any issues with getting the correct libraries, unpack libaries.zip into [python-root]/Lib/site-packages.
-When adding new dependencies, please add them to the libaries.zip

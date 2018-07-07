@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<link rel="shortcut icon" href="/images/titlelogo.JPG"/>
+<title>ABN AMRO</title>
+
+</head>
+<div class="wrapper-header">
+    <img src="/images/logocheck.JPG" style="height: 60px;">
+</div>
+<div class="wrapper-page-header">
+<!-- no navigation as such, so no contents -->
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<body>
+
+
+
+<div class="row" ng-app="myApp" ng-controller="formCtrl">
+  <div class="column" style="background-color:#17928c;">
+    
+    <div ng-if="!flag">
+        <h2 style="color:white">New Payment</h2>
+        <hr>
+    <form ng-submit="submit(true,amount)">
+        <label>From:</label>
+        <input type="text" name="to" ng-model="fromIBAN" required>
+        <br><br>
+        <label>Alias:</label>
+        <input type="text" name="alias" ng-model="alias" required>
+        <br><br>
+        <label>Amount:</label>
+        <input type="text" name="amount" ng-model="amount" required>
+        <br><br>
+        <label>To:</label>
+        <input type="text" name="from" ng-model="toIBAN" required>
+        <br><br>
+        <input type="submit" value="Send">
+      </form> 
+    </div>
+    <div ng-if="flag">
+        <h2 style="color:white">Sent successfully</h2>
+        <hr>
+        <br>
+        <p class="amount-center">&euro;{{amountvalue}}</p>
+        <br><br><br>
+        <p class="transaction">Sent To</p><br>
+        <p class="transaction">IBAN: 1232233212</p>
+        <p class="transaction">Transaction ID: 3556453890</p>
+        <input type="submit" value="Back" ng-click="Back(false)" />
+        </div>
+  </div>
+  <div class="column-second" style="background-color:#0b7774;">
+   <div class="lookupHeader">
+    <h2 style="color:white">Look Up</h2>
+    <!-- <img src="/images/INGlogo.JPG" > -->
+    <img ng-src="{{myresponse.content[0].bank == 'ING' && '/images/INGlogo.JPG' || ''}}"/>
+    <img ng-src="{{myresponse.content[0].bank == 'ABN' && '/images/ABNlogo.JPG' || ''}}"/>
+    <img ng-src="{{myresponse.content[0].bank == 'RABO' && '/images/Rabologo.JPG' || ''}}"/>
+   </div>
+    <hr>
+    <div>
+      <label>Alias: {{myresponse.content[0].alias}}</label>
+      <br><br>
+      <label>IBAN: {{myresponse.content[0].iban}}</label>
+    </div>
+    <div class="spinner">
+        <div class="bounce1"></div>
+       <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
+  </div>
+</div>
+
+<script>
+    var app = angular.module('myApp', []);
+    app.controller('formCtrl', function($scope,$http) {
+      $scope.flag = false;
+      setInterval(function(){
+       httpcallFunc();
+}, 5000)
+       $scope.submit = function(x,y){
+         if(x == true){
+         $scope.flag = true;
+         $scope.amountvalue = y;
+         }
+       }
+       $scope.Back = function(a){
+         if(a == false){
+         $scope.flag = false;
+         }
+       }
+       function httpcallFunc(){
+        $http.get("http://40.91.211.115:5000/alias/1234")
+        .then(function(response){
+          $scope.myresponse = response.data;
+        });
+       }
+	   function httpcallTransactionFunc(){
+        $http.post("http://40.91.211.115:5000/transaction:transactionid")
+        .then(function(response){
+          $scope.responsetransaction = response.data;
+        });
+       }
+    });
+    </script>
+</body>
+</html>
