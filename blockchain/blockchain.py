@@ -79,21 +79,23 @@ class Blockchain:
         :return: New Block
         """
         if len(self.chain) == 0:  # First block
-            proof = '100'
             previous_hash = '1'
-            T = 1528620468.0015163 # Fixed time
         else:
             last_block = self.last_block
-            proof = self.proof_of_work(last_block)
             previous_hash = self.hash(last_block)
-            T = time()
+
+        # Create a block without valid proof
         block = {
             'index': len(self.chain) + 1,
             'timestamp': time(),
             'transactions': self.current_transactions,
-            'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1]),
+            'previous_hash': previous_hash,
         }
+
+        # Calculate the proof of work
+        block['proof'] = self.proof_of_work(block)
+
+
         # Reset the current list of transactions
         self.current_transactions = []
         self.chain.append(block)
@@ -165,7 +167,7 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    def proof_of_work(self, last_block):
+    def proof_of_work(self, block):
         """
         Simple Proof of Work Algorithm:
 
@@ -176,29 +178,21 @@ class Blockchain:
         :return: <int>
         """
 
-        last_proof = last_block['proof']
-        last_hash = self.hash(last_block)
+        block['proof'] = 0
+        while self.valid_proof(block) is False:
+            block['proof'] += 1
 
-        proof = 0
-        while self.valid_proof(last_proof, proof, last_hash) is False:
-            proof += 1
+        return block['proof']
 
-        return proof
-
-    @staticmethod
-    def valid_proof(last_proof, proof, last_hash):
+    def valid_proof(self, block):
         """
         Validates the Proof
 
-        :param last_proof: <int> Previous Proof
-        :param proof: <int> Current Proof
-        :param last_hash: <str> The hash of the Previous Block
+        :param block: <dict> Block to verify proof of
         :return: <bool> True if correct, False if not.
-
         """
 
-        guess = '{last_proof}{proof}{last_hash}'.format(last_proof=last_proof,proof=proof,last_hash=last_hash).encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
+        guess_hash = self.hash(block)
         return guess_hash[:4] == "0000"
 
     def _validate_new_block(self, block):
