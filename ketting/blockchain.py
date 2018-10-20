@@ -8,9 +8,8 @@ import requests
 
 class Blockchain:
     def __init__(self):
-        self.current_transactions = []
+        self.transactions = []
         self.chain = []
-        self.nodes = set()
 
     def valid_chain(self, chain):
         """
@@ -73,47 +72,37 @@ class Blockchain:
 
         return False
 
-    def new_block(self):
+    def new_block(self, message=""):
         """
         Create a new Block in the Blockchain
         :return: New Block
         """
         if len(self.chain) == 0:  # First block
             previous_hash = '1'
+            transactions = []
         else:
             last_block = self.last_block
             previous_hash = self.hash(last_block)
+            transactions = self.transactions
+            self.current_transactions = []
+
+        assert type(message) == str, "Invalid data type for message, it should be a string"
 
         # Create a block without valid proof
         block = {
-            'index': len(self.chain) + 1,
+            'index': len(self.chain),
             'timestamp': time(),
-            'transactions': self.current_transactions,
+            'transactions': transactions,
             'previous_hash': previous_hash,
+            'message': message
         }
 
         # Calculate the proof of work
         block['proof'] = self.proof_of_work(block)
 
-
         # Reset the current list of transactions
-        self.current_transactions = []
         self.chain.append(block)
-        self._broadcast_block(block)
         return block
-
-    def _broadcast_block(self, block):
-        """
-        Broadcase a new block to all neighbours
-        """
-        # Broadcast new bloclk post /chain
-        headers = {'Content-Type':'application/json'}
-        data = json.dumps(block)
-        for neighbour in self.nodes:
-            try:
-                r = requests.post("{}/chain".format(neighbour), headers = headers, data = data, auth=self.nodecredentials)
-            except:
-                pass
 
     def add_remote_block(self, block):
         """Add a block to the chain that has received from another server.
@@ -202,7 +191,7 @@ class Blockchain:
                         'index': 1,
                         'timestamp': 1528564780.0628762,
                         'transactions': [{"alias":"1234","newbank":"ING","newiban":"NL45INGB23456543","oldbank":"","oldiban":""}],
-                        'proof': proof,
+                        'proof': "123456789776fde5234d768b1fd7957425a296b3eb9b6025e0a62c3430abcdef",
                         'previous_hash': "1998626d3776fde5234d768b1fd7957425a296b3eb9b6025e0a62c343064cafc",
                         }
 
