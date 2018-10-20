@@ -121,24 +121,25 @@ class Blockchain:
         # Return validation result so API can handle accordingly
         return valid
 
-    def new_transaction(self, oldbank, oldiban, newbank, newiban, alias):
+    def new_transaction(self, transaction):
         """
-        Creates a new transaction to go into the next mined Block
+        Add transaction to the transaction pool to be mined.
 
-        :param sender: Address of the Sender
-        :param recipient: Address of the Recipient
-        :param amount: Amount
-        :return: The index of the Block that will hold this transaction
+        returns: boolean, True if transaction is added to the pool
         """
-        self.current_transactions.append({
-            'oldbank': oldbank,
-            'oldiban': oldiban,
-            'newbank': newbank,
-            'newiban': newiban,
-            'alias': alias
-        })
 
-        return self.last_block['index'] + 1
+        if type(transaction) is dict and self.validate_transaction(transaction):
+            self.transactions.append(transaction)
+            return True
+
+        return False
+
+    def validate_transaction(self, transaction):
+        """Validate the content of a transaction.
+        Overwrite this function to implement your own logic. Without overwriting
+        there is not validation on content."""
+        return True
+
 
     @property
     def last_block(self):

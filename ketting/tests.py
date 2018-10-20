@@ -21,6 +21,7 @@ class TestBlockchain(unittest.TestCase):
             'previous_hash': "1998626d3776fde5234d768b1fd7957425a296b3eb9b6025e0a62c343064cafc",
             'message': "some nice string with a message"
             }
+        self.blockchain = Blockchain()
 
     def test_basic_initialisation(self):
        blockchain = Blockchain()
@@ -53,6 +54,25 @@ class TestBlockchain(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
             blockchain.new_block("hello".encode())
+
+    def test_add_valid_transaction(self):
+        transaction = {'foo': 'bar'}
+        self.assertTrue(self.blockchain.new_transaction(transaction))
+        self.assertTrue(self.blockchain.new_transaction({}))
+
+        self.assertEqual(len(self.blockchain.transactions), 2)
+        self.assertEqual(self.blockchain.transactions[0], transaction)
+        self.assertEqual(self.blockchain.transactions[1], {})
+
+    def test_add_invalid_transaction(self):
+        transaction = ['foo', 'bar']
+        self.assertFalse(self.blockchain.new_transaction(transaction))
+        self.assertFalse(self.blockchain.new_transaction([]))
+        self.assertFalse(self.blockchain.new_transaction("foo"))
+        self.assertFalse(self.blockchain.new_transaction(1))
+        self.assertFalse(self.blockchain.new_transaction(1.1))
+
+        self.assertEqual(len(self.blockchain.transactions), 0)
 
 if __name__ == "__main__":
     unittest.main()
