@@ -6,10 +6,10 @@ This project aims to create a useable blockchain in python along with the networ
 
 
 ## TODO list
-0. Clean up blockchain.py
-  0 Transactions
-    0 Add transactions to pool
-	0 Validate transactions
+1. Clean up blockchain.py
+  1. Transactions
+    1. Add transactions to pool
+	1. Validate transactions
   0.0 Create new block
     0.0.0 Pull transactions from pool
 	0.0.0 Create block to be mined
